@@ -1,0 +1,22 @@
+{
+  "name": "bitacora-csi",
+  "version": "1.0.0",
+  "description": "Simple software con capacidad de lectura de datos y acceso basico al fs para modificar crear o borrar archivos",
+  "keywords": [
+    "Notas",
+    "Modificacion",
+    "Creacion",
+    "Lectura"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Memcy-10/bitacora.git"
+  },
+  "author": "Maicol Montoya",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node src/index.js"
+  }
+}

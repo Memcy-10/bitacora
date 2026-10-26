@@ -1,6 +1,6 @@
 const hash = require("object-hash");
 const almacen = require("./almacen");
-const fechas = require("./fechas");
+const fechas = require("fechas-bitacora-maicol");
 
 // Agrega una nueva nota
 function agregar(texto, etiqueta) {

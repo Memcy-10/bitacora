@@ -5,21 +5,26 @@ const hash = require("object-hash");
 const almacen = require("./almacen");
 
 // Crea la nota: valida, genera el id, arma el objeto y se lo pasa al almacén
+// Crea la nota: valida, genera el id, arma el objeto y se lo pasa al almacén
 function agregar(texto, etiqueta) {
   // Se valida primero para no hashear ni guardar datos basura
   if (typeof texto !== "string" || !texto.trim()) {
     throw new Error(`El texto de la nota es obligatorio.`);
   }
 
-  // hash exige un objeto, por eso { id: ... }. Mismo texto -> mismo id,
-  // así almacen detecta y rechaza las repetidas. substring deja solo 8 caracteres
-  const id = hash({ id: texto.trim() }).substring(0, 8);
+  // trim quita espacios sobrantes; "limpio" es el texto que se guarda
+  const limpio = texto.trim();
+
+  // toLowerCase solo afecta al hash: "Hoy" y "hoy" dan el mismo id,
+  // así almacen detecta y rechaza la repetida, pero el texto original no se modifica.
+  // hash exige un objeto, por eso { id: ... }. substring deja solo 8 caracteres
+  const id = hash({ id: limpio.toLowerCase() }).substring(0, 8);
 
   const nota = {
     id,
-    texto: texto.trim(),              // se guarda sin espacios sobrantes
+    texto: limpio,                        // se guarda tal como lo escribió el usuario (con sus mayúsculas)
     etiqueta: etiqueta ?? "sin etiqueta", // valor por defecto si no envían etiqueta
-    fecha: Date.now(),                // número: simple de guardar y de ordenar
+    fecha: Date.now(),                    // número: simple de guardar y de ordenar
   };
 
   // Si el id ya existe, almacen lanza el error y la nota no se guarda
@@ -42,9 +47,13 @@ function listar(n) {
 }
 
 // Busca una nota por id y la devuelve formateada, o null si no existe
-function buscar(id) {
-  const nota = almacen.obtener(id);
-  return nota ? formatear(nota) : null;
+function buscar(palabra) {
+  const clave = palabra.trim().toLowerCase();
+
+  return almacen
+    .listar()
+    .filter((nota) => nota.texto.toLowerCase().includes(clave))
+    .map(formatear);
 }
 
 // Elimina por id y responde con un mensaje en español según el resultado

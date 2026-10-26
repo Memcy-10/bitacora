@@ -4,7 +4,9 @@ const hash = require("object-hash");
 // notas.js NO toca el archivo: todo el acceso a datos pasa por almacen
 const almacen = require("./almacen");
 
-// Crea la nota: valida, genera el id, arma el objeto y se lo pasa al almacén
+// NUEVO: toda la lógica de fechas vive en fechas.js
+const fechas = require("./fechas");
+
 // Crea la nota: valida, genera el id, arma el objeto y se lo pasa al almacén
 function agregar(texto, etiqueta) {
   // Se valida primero para no hashear ni guardar datos basura
@@ -12,19 +14,18 @@ function agregar(texto, etiqueta) {
     throw new Error(`El texto de la nota es obligatorio.`);
   }
 
-  // trim quita espacios sobrantes; "limpio" es el texto que se guarda
+  // "limpio" es el texto que se guarda, sin espacios sobrantes
   const limpio = texto.trim();
 
-  // toLowerCase solo afecta al hash: "Hoy" y "hoy" dan el mismo id,
-  // así almacen detecta y rechaza la repetida, pero el texto original no se modifica.
-  // hash exige un objeto, por eso { id: ... }. substring deja solo 8 caracteres
+  // toLowerCase solo afecta al hash: "Hoy" y "hoy" dan el mismo id y se detectan
+  // como repetidas, pero el texto guardado conserva lo que escribió el usuario
   const id = hash({ id: limpio.toLowerCase() }).substring(0, 8);
 
   const nota = {
     id,
-    texto: limpio,                        // se guarda tal como lo escribió el usuario (con sus mayúsculas)
-    etiqueta: etiqueta ?? "sin etiqueta", // valor por defecto si no envían etiqueta
-    fecha: Date.now(),                    // número: simple de guardar y de ordenar
+    texto: limpio,
+    etiqueta: etiqueta ?? "sin etiqueta",
+    fecha: fechas.ahora(), // CAMBIO: antes era Date.now() directo
   };
 
   // Si el id ya existe, almacen lanza el error y la nota no se guarda
@@ -34,10 +35,11 @@ function agregar(texto, etiqueta) {
   return nota;
 }
 
-// Convierte la nota guardada en una forma lista para mostrar:
-// la fecha numérica pasa a texto legible. No modifica el original (copia con spread)
+// Prepara la nota para mostrarla: la fecha numérica pasa a texto legible.
+// CAMBIO: la conversión la hace fechas.formatear; aquí solo se copia la nota (spread)
+// para no modificar el original
 function formatear(nota) {
-  return { ...nota, fecha: new Date(nota.fecha).toLocaleString("es-CO") };
+  return { ...nota, fecha: fechas.formatear(nota.fecha) };
 }
 
 // Lista las notas ya formateadas; si se envía n, solo devuelve las últimas n
@@ -46,7 +48,8 @@ function listar(n) {
   return n ? notas.slice(-n) : notas;
 }
 
-// Busca una nota por id y la devuelve formateada, o null si no existe
+// Busca por palabra dentro del texto y devuelve TODAS las coincidencias, formateadas.
+// toLowerCase en ambos lados: así no distingue mayúsculas de minúsculas
 function buscar(palabra) {
   const clave = palabra.trim().toLowerCase();
 
@@ -57,7 +60,6 @@ function buscar(palabra) {
 }
 
 // Elimina por id y responde con un mensaje en español según el resultado
-// (almacen.eliminar devuelve true si borró y false si no encontró la nota)
 function borrar(id) {
   return almacen.eliminar(id)
     ? `La nota ${id} se eliminó correctamente.`

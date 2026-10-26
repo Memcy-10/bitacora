@@ -1,70 +1,97 @@
-// object-hash permite hashear objetos; lo usamos para generar el id de cada nota
 const hash = require("object-hash");
-
-// notas.js NO toca el archivo: todo el acceso a datos pasa por almacen
 const almacen = require("./almacen");
-
-// NUEVO: toda la lógica de fechas vive en fechas.js
 const fechas = require("./fechas");
 
-// Crea la nota: valida, genera el id, arma el objeto y se lo pasa al almacén
+// Agrega una nueva nota
 function agregar(texto, etiqueta) {
-  // Se valida primero para no hashear ni guardar datos basura
   if (typeof texto !== "string" || !texto.trim()) {
-    throw new Error(`El texto de la nota es obligatorio.`);
+    throw new Error("El texto de la nota es obligatorio.");
   }
 
-  // "limpio" es el texto que se guarda, sin espacios sobrantes
   const limpio = texto.trim();
-
-  // toLowerCase solo afecta al hash: "Hoy" y "hoy" dan el mismo id y se detectan
-  // como repetidas, pero el texto guardado conserva lo que escribió el usuario
-  const id = hash({ id: limpio.toLowerCase() }).substring(0, 8);
+  const id = hash(limpio.toLowerCase()).substring(0, 8);
 
   const nota = {
     id,
     texto: limpio,
-    etiqueta: etiqueta ?? "sin etiqueta",
-    fecha: fechas.ahora(), // CAMBIO: antes era Date.now() directo
+    etiqueta: etiqueta && etiqueta.trim() ? etiqueta.trim() : "general",
+    fecha: fechas.getTimeStamp ? fechas.getTimeStamp() : fechas.ahora()
   };
 
-  // Si el id ya existe, almacen lanza el error y la nota no se guarda
   almacen.agregar(nota);
 
-  // Se devuelve para que quien llame sepa qué id se generó
-  return nota;
+  // Retorna nota con fecha formateada en formato largo
+  const fechaLarga = fechas.getLongTime
+    ? fechas.getLongTime("es-ES", nota.fecha)
+    : fechas.formatear(nota.fecha);
+
+  return {
+    ...nota,
+    fechaFormateada: fechaLarga
+  };
 }
 
-// Prepara la nota para mostrarla: la fecha numérica pasa a texto legible.
-// CAMBIO: la conversión la hace fechas.formatear; aquí solo se copia la nota (spread)
-// para no modificar el original
-function formatear(nota) {
-  return { ...nota, fecha: fechas.formatear(nota.fecha) };
-}
-
-// Lista las notas ya formateadas; si se envía n, solo devuelve las últimas n
+// Lista las notas formateadas con fecha corta
 function listar(n) {
-  const notas = almacen.listar().map(formatear);
-  return n ? notas.slice(-n) : notas;
+  const todas = almacen.listar();
+  const seleccionadas = typeof n === "number" && n > 0 ? todas.slice(-n) : todas;
+
+  return seleccionadas.map((nota) => ({
+    ...nota,
+    fechaFormateada: fechas.getShortDate
+      ? fechas.getShortDate("es-ES", nota.fecha)
+      : fechas.formatear(nota.fecha)
+  }));
 }
 
-// Busca por palabra dentro del texto y devuelve TODAS las coincidencias, formateadas.
-// toLowerCase en ambos lados: así no distingue mayúsculas de minúsculas
+// Busca notas que contengan la palabra (sin distinguir mayusculas/minusculas)
 function buscar(palabra) {
+  if (typeof palabra !== "string" || !palabra.trim()) {
+    throw new Error("Debes indicar una palabra para buscar.");
+  }
+
   const clave = palabra.trim().toLowerCase();
+  const todas = almacen.listar();
 
-  return almacen
-    .listar()
+  return todas
     .filter((nota) => nota.texto.toLowerCase().includes(clave))
-    .map(formatear);
+    .map((nota) => ({
+      ...nota,
+      fechaFormateada: fechas.getShortDate
+        ? fechas.getShortDate("es-ES", nota.fecha)
+        : fechas.formatear(nota.fecha)
+    }));
 }
 
-// Elimina por id y responde con un mensaje en español según el resultado
+// Elimina una nota por id
 function borrar(id) {
-  return almacen.eliminar(id)
-    ? `La nota ${id} se eliminó correctamente.`
-    : `No se encontró ninguna nota con el id ${id}.`;
+  if (typeof id !== "string" || !id.trim()) {
+    throw new Error("Debes indicar el id de la nota a borrar.");
+  }
+
+  const eliminado = almacen.eliminar(id.trim());
+  if (!eliminado) {
+    throw new Error(`No existe ninguna nota con el id ${id}.`);
+  }
+
+  return `Nota [${id}] eliminada correctamente.`;
 }
 
-// Solo estas 4 funciones son públicas; formatear queda como detalle interno
-module.exports = { agregar, listar, buscar, borrar };
+// Realiza respaldo de las notas
+function respaldar() {
+  return almacen.respaldar();
+}
+
+// Exporta las notas a archivo de texto y lo mueve a destino
+function exportar(destino) {
+  return almacen.exportar(destino);
+}
+
+module.exports = {
+  agregar,
+  listar,
+  buscar,
+  borrar,
+  respaldar,
+  exportar
+};

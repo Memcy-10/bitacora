@@ -1,15 +1,33 @@
-// fechas.js solo sabe de fechas: no conoce notas ni archivos
+// Funciones utilitarias de fechas para bitacora-cli
+// Más adelante este módulo se extraerá a un paquete npm independiente
 
-// Devuelve la fecha actual como número (milisegundos desde 1970).
-// Se guarda como número porque es simple de almacenar en JSON y fácil de ordenar
-function ahora() {
+function getTimeStamp() {
   return Date.now();
 }
 
-// Convierte el número guardado en texto legible en español de Colombia.
-// Ejemplo: 1761350000000 -> "24/10/2025, 6:33:20 p. m."
-function formatear(milisegundos) {
-  return new Date(milisegundos).toLocaleString("es-CO");
+function getLongTime(locale = "es-ES", timestamp = Date.now()) {
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    timeZoneName: "short"
+  };
+  return new Date(timestamp).toLocaleDateString(locale, options);
 }
 
-module.exports = { ahora, formatear };
+function getShortDate(locale = "es-ES", timestamp = Date.now()) {
+  return new Date(timestamp).toLocaleDateString(locale);
+}
+
+module.exports = {
+  getTimeStamp,
+  getLongTime,
+  getShortDate,
+  // Alias de compatibilidad
+  ahora: getTimeStamp,
+  formatear: getShortDate
+};

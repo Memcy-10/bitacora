@@ -64,7 +64,7 @@ Respaldo creado exitosamente: notas_1793047254071.json
 ### Comando 6: exportar
 ```bash
 $ npm start -- exportar
-Notas exportadas exitosamente a: C:\Users\maico\exportacion.txt
+Notas exportadas exitosamente a: C:\Users\maico\Documents\exportacion.txt
 ```
 
 ### Comando 7: borrar

@@ -111,7 +111,8 @@ function respaldar() {
 
 // Exporta las notas a salida/exportacion.txt y luego lo mueve a la carpeta absoluta indicada
 function exportar(destinoPersonalizado) {
-  const destino = destinoPersonalizado || os.homedir();
+  const rutaDocumentos = path.join(os.homedir(), "Documents");
+  const destino = destinoPersonalizado || (fs.existsSync(rutaDocumentos) ? rutaDocumentos : os.homedir());
 
   // Validaciones de destino
   if (!path.isAbsolute(destino)) {
